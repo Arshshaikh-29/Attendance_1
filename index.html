@@ -53,12 +53,12 @@
         }
     </style>
 </head>
-<body>
+<body onload="loadLastAttendance()">
     <div class="container">
         <h2>Attendance List</h2>
         <input type="text" id="name" placeholder="Name" required>
         <input type="text" id="standard" placeholder="Standard" required>
-        <input type="date" id="date" required>
+        <input type="date" id="date" required onchange="saveLastDate()">
         <select id="status">
             <option value="Present">Present</option>
             <option value="Absent">Absent</option>
@@ -112,11 +112,10 @@
                 
                 attendanceData.push({ name, standard, date: formattedDate, time: currentTime, status });
                 localStorage.setItem(date, JSON.stringify(attendanceData));
-                
+                saveLastDate();
                 displayAttendance(date);
                 document.getElementById('name').value = '';
                 document.getElementById('standard').value = '';
-                document.getElementById('date').value = '';
             } else {
                 alert('Please fill all fields!');
             }
@@ -150,22 +149,17 @@
             }
         }
 
-        function downloadAttendancePDF() {
+        function saveLastDate() {
             let date = document.getElementById('date').value;
-            if (!date) {
-                alert('Please select a date to download records!');
-                return;
+            localStorage.setItem('lastSelectedDate', date);
+        }
+
+        function loadLastAttendance() {
+            let lastDate = localStorage.getItem('lastSelectedDate');
+            if (lastDate) {
+                document.getElementById('date').value = lastDate;
+                displayAttendance(lastDate);
             }
-            
-            const { jsPDF } = window.jspdf;
-            let doc = new jsPDF();
-            doc.text(`Attendance List (${formatDate(date)})`, 10, 10);
-            
-            let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
-            let data = attendanceData.map(entry => [entry.name, entry.standard, entry.date, entry.time, entry.status]);
-            
-            doc.autoTable({ head: [["Name", "Standard", "Date", "Time", "Status"]], body: data });
-            doc.save(`attendance_${date}.pdf`);
         }
     </script>
 </body>
