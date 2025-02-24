@@ -43,13 +43,19 @@
             border: 1px solid #ccc;
             text-align: left;
         }
+        .delete-btn, .out-btn {
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
         .delete-btn {
             background-color: red;
             color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 3px;
+        }
+        .out-btn {
+            background-color: orange;
+            color: white;
         }
     </style>
 </head>
@@ -74,9 +80,10 @@
                 <th>Name</th>
                 <th>Standard</th>
                 <th>Date</th>
-                <th>Time</th>
+                <th>In Time</th>
+                <th>Out Time</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -95,8 +102,7 @@
             let now = new Date();
             let hours = now.getHours().toString().padStart(2, '0');
             let minutes = now.getMinutes().toString().padStart(2, '0');
-            let seconds = now.getSeconds().toString().padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
+            return `${hours}:${minutes}`;
         }
 
         function markAttendance() {
@@ -107,10 +113,10 @@
             
             if (name && standard && date) {
                 let formattedDate = formatDate(date);
-                let currentTime = getCurrentTime();
+                let inTime = getCurrentTime();
                 let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
                 
-                attendanceData.push({ name, standard, date: formattedDate, time: currentTime, status });
+                attendanceData.push({ name, standard, date: formattedDate, inTime, outTime: "-", status });
                 localStorage.setItem(date, JSON.stringify(attendanceData));
                 saveLastDate();
                 displayAttendance(date);
@@ -121,6 +127,13 @@
             }
         }
 
+        function markOutTime(index, date) {
+            let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
+            attendanceData[index].outTime = getCurrentTime();
+            localStorage.setItem(date, JSON.stringify(attendanceData));
+            displayAttendance(date);
+        }
+
         function displayAttendance(date) {
             let tableBody = document.querySelector('#attendanceTable tbody');
             tableBody.innerHTML = '';
@@ -128,7 +141,7 @@
             
             attendanceData.forEach((entry, index) => {
                 let row = tableBody.insertRow();
-                row.innerHTML = `<td>${entry.name}</td><td>${entry.standard}</td><td>${entry.date}</td><td>${entry.time}</td><td>${entry.status}</td><td><button class='delete-btn' onclick='deleteRow(${index}, "${date}")'>Delete</button></td>`;
+                row.innerHTML = `<td>${entry.name}</td><td>${entry.standard}</td><td>${entry.date}</td><td>${entry.inTime}</td><td>${entry.outTime}</td><td>${entry.status}</td><td><button class='out-btn' onclick='markOutTime(${index}, "${date}")'>Mark Out</button> <button class='delete-btn' onclick='deleteRow(${index}, "${date}")'>Delete</button></td>`;
             });
         }
 
@@ -149,19 +162,6 @@
             }
         }
 
-        function saveLastDate() {
-            let date = document.getElementById('date').value;
-            localStorage.setItem('lastSelectedDate', date);
-        }
-
-        function loadLastAttendance() {
-            let lastDate = localStorage.getItem('lastSelectedDate');
-            if (lastDate) {
-                document.getElementById('date').value = lastDate;
-                displayAttendance(lastDate);
-            }
-        }
-
         function downloadAttendancePDF() {
             const { jsPDF } = window.jspdf;
             let doc = new jsPDF();
@@ -170,8 +170,8 @@
             
             doc.text(`Attendance List - ${formatDate(date)}`, 10, 10);
             doc.autoTable({
-                head: [["Name", "Standard", "Date", "Time", "Status"]],
-                body: attendanceData.map(entry => [entry.name, entry.standard, entry.date, entry.time, entry.status])
+                head: [["Name", "Standard", "Date", "In Time", "Out Time", "Status"]],
+                body: attendanceData.map(entry => [entry.name, entry.standard, entry.date, entry.inTime, entry.outTime, entry.status])
             });
             
             doc.save(`attendance_${date}.pdf`);
