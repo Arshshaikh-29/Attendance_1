@@ -161,6 +161,21 @@
                 displayAttendance(lastDate);
             }
         }
+
+        function downloadAttendancePDF() {
+            const { jsPDF } = window.jspdf;
+            let doc = new jsPDF();
+            let date = document.getElementById('date').value;
+            let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
+            
+            doc.text(`Attendance List - ${formatDate(date)}`, 10, 10);
+            doc.autoTable({
+                head: [["Name", "Standard", "Date", "Time", "Status"]],
+                body: attendanceData.map(entry => [entry.name, entry.standard, entry.date, entry.time, entry.status])
+            });
+            
+            doc.save(`attendance_${date}.pdf`);
+        }
     </script>
 </body>
 </html>
