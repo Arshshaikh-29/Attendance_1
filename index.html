@@ -43,6 +43,14 @@
             border: 1px solid #ccc;
             text-align: left;
         }
+        .delete-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +64,7 @@
         </select>
         <button onclick="markAttendance()">Mark Attendance</button>
         <button onclick="downloadAttendancePDF()">Download PDF</button>
+        <button onclick="clearAll()">Clear All</button>
     </div>
     
     <table id="attendanceTable">
@@ -63,7 +72,9 @@
             <tr>
                 <th>Name</th>
                 <th>Date</th>
+                <th>Time</th>
                 <th>Status</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -78,6 +89,14 @@
             return `${day}/${month}/${year}`;
         }
 
+        function getCurrentTime() {
+            let now = new Date();
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            let seconds = now.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
         function markAttendance() {
             let name = document.getElementById('name').value;
             let date = document.getElementById('date').value;
@@ -85,15 +104,25 @@
             
             if (name && date) {
                 let formattedDate = formatDate(date);
+                let currentTime = getCurrentTime();
                 let table = document.getElementById('attendanceTable').getElementsByTagName('tbody')[0];
                 let newRow = table.insertRow();
-                newRow.innerHTML = `<td>${name}</td><td>${formattedDate}</td><td>${status}</td>`;
+                newRow.innerHTML = `<td>${name}</td><td>${formattedDate}</td><td>${currentTime}</td><td>${status}</td><td><button class='delete-btn' onclick='deleteRow(this)'>Delete</button></td>`;
                 
                 document.getElementById('name').value = '';
                 document.getElementById('date').value = '';
             } else {
                 alert('Please fill all fields!');
             }
+        }
+
+        function deleteRow(button) {
+            let row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+        }
+
+        function clearAll() {
+            document.getElementById('attendanceTable').getElementsByTagName('tbody')[0].innerHTML = '';
         }
 
         function downloadAttendancePDF() {
@@ -109,7 +138,7 @@
             for (let i = 1; i < rows.length; i++) {
                 let cells = rows[i].getElementsByTagName('td');
                 let rowData = [];
-                for (let j = 0; j < cells.length; j++) {
+                for (let j = 0; j < cells.length - 1; j++) { // Excluding delete button
                     rowData.push(cells[j].innerText);
                 }
                 if (rowData.length > 0) {
@@ -118,7 +147,7 @@
             }
             
             doc.autoTable({
-                head: [["Name", "Date", "Status"]],
+                head: [["Name", "Date", "Time", "Status"]],
                 body: data
             });
             
