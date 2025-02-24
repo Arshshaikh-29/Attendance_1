@@ -92,17 +92,12 @@
     <script>
         function formatDate(date) {
             let d = new Date(date);
-            let day = d.getDate().toString().padStart(2, '0');
-            let month = (d.getMonth() + 1).toString().padStart(2, '0');
-            let year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+            return d.toLocaleDateString();
         }
 
         function getCurrentTime() {
             let now = new Date();
-            let hours = now.getHours().toString().padStart(2, '0');
-            let minutes = now.getMinutes().toString().padStart(2, '0');
-            return `${hours}:${minutes}`;
+            return now.toLocaleTimeString();
         }
 
         function markAttendance() {
@@ -175,6 +170,20 @@
             });
             
             doc.save(`attendance_${date}.pdf`);
+        }
+
+        function saveLastDate() {
+            let date = document.getElementById('date').value;
+            localStorage.setItem("lastSelectedDate", date);
+            displayAttendance(date);
+        }
+
+        function loadLastAttendance() {
+            let lastDate = localStorage.getItem("lastSelectedDate");
+            if (lastDate) {
+                document.getElementById('date').value = lastDate;
+                displayAttendance(lastDate);
+            }
         }
     </script>
 </body>
