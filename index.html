@@ -100,18 +100,20 @@
         }
 
         function markAttendance() {
-            let name = document.getElementById('name').value;
-            let standard = document.getElementById('standard').value;
+            let name = document.getElementById('name').value.trim();
+            let standard = document.getElementById('standard').value.trim();
             let date = document.getElementById('date').value;
             let status = document.getElementById('status').value;
             
             if (name && standard && date) {
                 let formattedDate = formatDate(date);
                 let currentTime = getCurrentTime();
-                let table = document.getElementById('attendanceTable').getElementsByTagName('tbody')[0];
-                let newRow = table.insertRow();
-                newRow.innerHTML = `<td>${name}</td><td>${standard}</td><td>${formattedDate}</td><td>${currentTime}</td><td>${status}</td><td><button class='delete-btn' onclick='deleteRow(this)'>Delete</button></td>`;
+                let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
                 
+                attendanceData.push({ name, standard, date: formattedDate, time: currentTime, status });
+                localStorage.setItem(date, JSON.stringify(attendanceData));
+                
+                displayAttendance(date);
                 document.getElementById('name').value = '';
                 document.getElementById('standard').value = '';
                 document.getElementById('date').value = '';
@@ -120,42 +122,50 @@
             }
         }
 
-        function deleteRow(button) {
-            let row = button.parentNode.parentNode;
-            row.parentNode.removeChild(row);
+        function displayAttendance(date) {
+            let tableBody = document.querySelector('#attendanceTable tbody');
+            tableBody.innerHTML = '';
+            let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
+            
+            attendanceData.forEach((entry, index) => {
+                let row = tableBody.insertRow();
+                row.innerHTML = `<td>${entry.name}</td><td>${entry.standard}</td><td>${entry.date}</td><td>${entry.time}</td><td>${entry.status}</td><td><button class='delete-btn' onclick='deleteRow(${index}, "${date}")'>Delete</button></td>`;
+            });
+        }
+
+        function deleteRow(index, date) {
+            let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
+            attendanceData.splice(index, 1);
+            localStorage.setItem(date, JSON.stringify(attendanceData));
+            displayAttendance(date);
         }
 
         function clearAll() {
-            document.getElementById('attendanceTable').getElementsByTagName('tbody')[0].innerHTML = '';
+            let date = document.getElementById('date').value;
+            if (date) {
+                localStorage.removeItem(date);
+                displayAttendance(date);
+            } else {
+                alert('Please select a date to clear records!');
+            }
         }
 
         function downloadAttendancePDF() {
-            const { jsPDF } = window.jspdf;
-            let doc = new jsPDF();
-            
-            doc.text("Attendance List", 10, 10);
-            
-            let table = document.getElementById('attendanceTable');
-            let rows = table.getElementsByTagName('tr');
-            let data = [];
-            
-            for (let i = 1; i < rows.length; i++) {
-                let cells = rows[i].getElementsByTagName('td');
-                let rowData = [];
-                for (let j = 0; j < cells.length - 1; j++) { // Excluding delete button
-                    rowData.push(cells[j].innerText);
-                }
-                if (rowData.length > 0) {
-                    data.push(rowData);
-                }
+            let date = document.getElementById('date').value;
+            if (!date) {
+                alert('Please select a date to download records!');
+                return;
             }
             
-            doc.autoTable({
-                head: [["Name", "Standard", "Date", "Time", "Status"]],
-                body: data
-            });
+            const { jsPDF } = window.jspdf;
+            let doc = new jsPDF();
+            doc.text(`Attendance List (${formatDate(date)})`, 10, 10);
             
-            doc.save("attendance_list.pdf");
+            let attendanceData = JSON.parse(localStorage.getItem(date)) || [];
+            let data = attendanceData.map(entry => [entry.name, entry.standard, entry.date, entry.time, entry.status]);
+            
+            doc.autoTable({ head: [["Name", "Standard", "Date", "Time", "Status"]], body: data });
+            doc.save(`attendance_${date}.pdf`);
         }
     </script>
 </body>
